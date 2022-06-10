@@ -13,9 +13,7 @@ class DCQSTileService : TileService() {
 
     private fun updateTileStatus() {
         val tile = qsTile ?: return
-        val dcEnabled = SettingsHelper.getEnableDC()
-        val refreshRate = SettingsHelper.getUserRefreshRate()
-        tile.state = if (dcEnabled && refreshRate == 90) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+        tile.state = if (SettingsHelper.isCurrentDC90State()) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         tile.updateTile()
         Log.i(TAG, "tile state: ${tile.state}")
     }

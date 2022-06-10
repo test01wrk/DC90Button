@@ -16,11 +16,17 @@ class EventReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Log.i(TAG, "onReceive: ${intent.action}")
         when (intent.action) {
-            Intent.ACTION_USER_PRESENT -> handler.postDelayed({
-                SettingsHelper.setEnableDC90(true) {
+            Intent.ACTION_USER_PRESENT -> {
+                if (SettingsHelper.isDC90Enabled() || SettingsHelper.isCurrentDC90State()) {
+                    handler.postDelayed({
+                        SettingsHelper.setEnableDC90(true) {
+                            MyApplication.updateQSTile()
+                        }
+                    }, 200)
+                } else {
                     MyApplication.updateQSTile()
                 }
-            }, 200)
+            }
             else -> {
                 MyApplication.updateQSTile()
             }

@@ -14,7 +14,10 @@ class MyApplication : Application() {
 
         @SuppressLint("NewApi")
         fun updateQSTile() {
-            TileService.requestListeningState(application, ComponentName(application, DCQSTileService::class.java))
+            TileService.requestListeningState(
+                application,
+                ComponentName(application, DCQSTileService::class.java)
+            )
         }
     }
 

@@ -1,12 +1,16 @@
 package com.rdstory.dc90button
 
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import com.rdstory.dc90button.MyApplication.Companion.application as context
 
 object SettingsHelper {
+    private const val KEY_DC90_ENABLED = "dc90_enabled"
+
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val sp = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     
     fun setUserRefreshRate(refreshRate: Int) {
         Settings.System.putInt(context.contentResolver, "user_refresh_rate", refreshRate)
@@ -23,6 +27,10 @@ object SettingsHelper {
 
     fun getEnableDC(): Boolean {
         return Settings.System.getInt(context.contentResolver, "dc_back_light", 0) == 1
+    }
+
+    fun isCurrentDC90State(): Boolean {
+        return getEnableDC() && getUserRefreshRate() == 90
     }
 
     fun isDCIncompatible(): Boolean {
@@ -49,5 +57,10 @@ object SettingsHelper {
             setUserRefreshRate(120) // TODO restore
             callback?.invoke()
         }
+        sp.edit().putBoolean(KEY_DC90_ENABLED, enable).apply()
+    }
+
+    fun isDC90Enabled(): Boolean {
+        return sp.getBoolean(KEY_DC90_ENABLED, false)
     }
 }

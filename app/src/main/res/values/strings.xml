@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">DC90Button</string>
+    <string name="default_dc_tile_label">DC90</string>
+</resources>

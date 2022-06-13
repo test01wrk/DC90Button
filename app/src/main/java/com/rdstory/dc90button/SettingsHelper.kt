@@ -50,7 +50,7 @@ object SettingsHelper {
                     setEnableDC(true)
                     setUserRefreshRate(90)
                     callback?.invoke()
-                }, 100)
+                }, 1000)
             }
         } else {
             setEnableDC(false)
@@ -62,5 +62,15 @@ object SettingsHelper {
 
     fun isDC90Enabled(): Boolean {
         return sp.getBoolean(KEY_DC90_ENABLED, false)
+    }
+
+    fun checkRestoreDC90() {
+        if (isDC90Enabled() || isCurrentDC90State()) {
+            mainHandler.postDelayed({
+                setEnableDC90(true) { MyApplication.updateQSTile() }
+            }, 1000)
+        } else {
+            MyApplication.updateQSTile()
+        }
     }
 }

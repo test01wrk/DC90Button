@@ -31,7 +31,5 @@ class DCQSTileService : TileService() {
         }
         qsTile.state = if (qsTile.state != Tile.STATE_ACTIVE) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         qsTile.updateTile()
-
     }
-
 }

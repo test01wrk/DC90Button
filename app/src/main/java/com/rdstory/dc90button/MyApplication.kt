@@ -28,6 +28,6 @@ class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Log.i(TAG, "application created")
-        updateQSTile()
+        SettingsHelper.checkRestoreDC90()
     }
 }

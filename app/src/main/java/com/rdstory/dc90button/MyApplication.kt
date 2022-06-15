@@ -18,6 +18,10 @@ class MyApplication : Application() {
                 application,
                 ComponentName(application, DCQSTileService::class.java)
             )
+            TileService.requestListeningState(
+                application,
+                ComponentName(application, DC60QSTileService::class.java)
+            )
         }
     }
 

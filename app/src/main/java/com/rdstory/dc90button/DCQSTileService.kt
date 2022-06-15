@@ -25,6 +25,12 @@ class DCQSTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
+        if (!SettingsHelper.getEnableDC()) {
+            showDialog(OpenDCDialog(this))
+            qsTile.state = Tile.STATE_INACTIVE
+            qsTile.updateTile()
+            return
+        }
         SettingsHelper.setEnableDC90(qsTile.state != Tile.STATE_ACTIVE) {
             // check status again later
             MyApplication.updateQSTile()

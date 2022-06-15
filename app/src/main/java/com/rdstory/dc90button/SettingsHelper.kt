@@ -4,25 +4,28 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import kotlin.math.max
 import com.rdstory.dc90button.MyApplication.Companion.application as context
 
 object SettingsHelper {
     private const val KEY_DC90_ENABLED = "dc90_enabled"
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val toggleHandler = Handler(Looper.getMainLooper())
     private val sp = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     
     fun setUserRefreshRate(refreshRate: Int) {
-        Settings.System.putInt(context.contentResolver, "user_refresh_rate", refreshRate)
+        val urr = Settings.System.getInt(context.contentResolver, "user_refresh_rate", 60)
+        if (urr > refreshRate) {
+            Settings.System.putInt(context.contentResolver, "user_refresh_rate", refreshRate)
+        }
         Settings.System.putInt(context.contentResolver, "peak_refresh_rate", refreshRate)
     }
 
-    fun setEnableDC(enable: Boolean) {
-        Settings.System.putInt(context.contentResolver, "dc_back_light", if (enable) 1 else 0)
-    }
-
     fun getUserRefreshRate(): Int {
-        return Settings.System.getInt(context.contentResolver, "user_refresh_rate", 60)
+        val urr = Settings.System.getInt(context.contentResolver, "user_refresh_rate", 60)
+        val upr = Settings.System.getInt(context.contentResolver, "peak_refresh_rate", 60)
+        return max(urr, upr)
     }
 
     fun getEnableDC(): Boolean {
@@ -38,22 +41,20 @@ object SettingsHelper {
     }
 
     fun setEnableDC90(enable: Boolean, callback: (() -> Unit)? = null) {
+        toggleHandler.removeCallbacksAndMessages(null)
         if (enable) {
             val refreshRate = getUserRefreshRate()
             if (refreshRate == 60) {
-                setEnableDC(true)
                 setUserRefreshRate(90)
                 callback?.invoke()
             } else {
                 setUserRefreshRate(60)
-                mainHandler.postDelayed({
-                    setEnableDC(true)
+                toggleHandler.postDelayed({
                     setUserRefreshRate(90)
                     callback?.invoke()
                 }, 1000)
             }
         } else {
-            setEnableDC(false)
             setUserRefreshRate(120) // TODO restore
             callback?.invoke()
         }

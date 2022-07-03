@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId "com.rdstory.dc90button"
-        minSdk 14
+        minSdk 18
         targetSdk 14
         versionCode 1
         versionName "1.0.0"

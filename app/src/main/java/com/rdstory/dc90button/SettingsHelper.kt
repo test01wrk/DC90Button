@@ -18,11 +18,15 @@ object SettingsHelper {
     
     fun setUserRefreshRate(refreshRate: Int) {
         Settings.System.putInt(context.contentResolver, "user_refresh_rate", refreshRate)
-        Settings.System.putInt(context.contentResolver, "peak_refresh_rate", refreshRate)
+        setPeakUserRefreshRate(refreshRate)
     }
 
     fun getUserRefreshRate(): Int {
         return Settings.System.getInt(context.contentResolver, "user_refresh_rate", 60)
+    }
+
+    fun setPeakUserRefreshRate(refreshRate: Int) {
+        Settings.System.putInt(context.contentResolver, "peak_refresh_rate", refreshRate)
     }
 
     fun getEnableDC(): Boolean {

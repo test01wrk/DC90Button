@@ -1,6 +1,7 @@
 package com.rdstory.dc90button
 
 import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -9,6 +10,7 @@ import com.rdstory.dc90button.MyApplication.Companion.application as context
 object SettingsHelper {
     private const val KEY_DC90_ENABLED = "dc90_enabled"
     private const val KEY_DC60_ENABLED = "dc60_enabled"
+    private const val KEY_ANDROID_S_NOTICED = "android_s_noticed"
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val toggleHandler = Handler(Looper.getMainLooper())
@@ -86,5 +88,16 @@ object SettingsHelper {
                 setEnableDC60(true) { MyApplication.updateQSTile() }
             }, 500)
         }
+    }
+
+    fun isAndroidSNoticed(): Boolean {
+        if (Build.VERSION.SDK_INT != Build.VERSION_CODES.S) {
+            return true
+        }
+        val noticed = sp.getBoolean(KEY_ANDROID_S_NOTICED, false)
+        if (!noticed) {
+            sp.edit().putBoolean(KEY_ANDROID_S_NOTICED, true).apply()
+        }
+        return noticed
     }
 }

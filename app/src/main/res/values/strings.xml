@@ -6,4 +6,7 @@
     <string name="open_dc_desc">请前往设置页面开启 DC 功能后再试</string>
     <string name="goto_settings">前往设置</string>
     <string name="cancel">取消</string>
+    <string name="android_s_notice_title">Android 12 系统说明</string>
+    <string name="android_s_notice_content">Android 12 系统锁屏后 DC 失效，且本开关可能无法自动恢复 DC 效果，需要前往系统设置手动重新开启 DC 开关</string>
+    <string name="got_it">我知道了</string>
 </resources>

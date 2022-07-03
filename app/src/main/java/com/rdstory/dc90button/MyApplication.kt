@@ -3,6 +3,8 @@ package com.rdstory.dc90button
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.ComponentName
+import android.database.ContentObserver
+import android.provider.Settings
 import android.service.quicksettings.TileService
 import android.util.Log
 
@@ -33,5 +35,12 @@ class MyApplication : Application() {
         super.onCreate()
         Log.i(TAG, "application created")
         SettingsHelper.checkRestoreDC90()
+        val observer = object : ContentObserver(null) {
+            override fun onChange(selfChange: Boolean) {
+                updateQSTile()
+            }
+        }
+        contentResolver.registerContentObserver(
+            Settings.System.getUriFor("dc_back_light"), false, observer)
     }
 }

@@ -18,11 +18,15 @@ object SettingsHelper {
     
     fun setUserRefreshRate(refreshRate: Int) {
         Settings.System.putInt(context.contentResolver, "user_refresh_rate", refreshRate)
-        Settings.System.putInt(context.contentResolver, "peak_refresh_rate", refreshRate)
+        setPeakUserRefreshRate(refreshRate)
     }
 
     fun getUserRefreshRate(): Int {
         return Settings.System.getInt(context.contentResolver, "user_refresh_rate", 60)
+    }
+
+    fun setPeakUserRefreshRate(refreshRate: Int) {
+        Settings.System.putInt(context.contentResolver, "peak_refresh_rate", refreshRate)
     }
 
     fun getEnableDC(): Boolean {
@@ -88,6 +92,10 @@ object SettingsHelper {
                 setEnableDC60(true) { MyApplication.updateQSTile() }
             }, 500)
         }
+    }
+
+    fun shouldRestore(): Boolean {
+        return isDC90Enabled() || isCurrentDC90State() || isDC60Enabled() || isCurrentDC60State()
     }
 
     fun isAndroidSNoticed(): Boolean {

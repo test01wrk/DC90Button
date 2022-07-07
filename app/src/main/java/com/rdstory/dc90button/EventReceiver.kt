@@ -13,7 +13,7 @@ class EventReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Log.i(TAG, "onReceive: ${intent.action}")
         when (intent.action) {
-            Intent.ACTION_USER_PRESENT -> SettingsHelper.checkRestoreDC90()
+            Intent.ACTION_USER_PRESENT -> SettingsHelper.checkRestoreDC()
             else -> MyApplication.updateQSTile()
         }
     }

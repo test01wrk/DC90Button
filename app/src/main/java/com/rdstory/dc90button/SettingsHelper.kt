@@ -1,22 +1,32 @@
 package com.rdstory.dc90button
 
+import android.annotation.TargetApi
 import android.content.Context
+import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import com.rdstory.dc90button.MyApplication.Companion.application as context
 
+@TargetApi(Build.VERSION_CODES.Q)
 object SettingsHelper {
-    private const val KEY_DC90_ENABLED = "dc90_enabled"
-    private const val KEY_DC60_ENABLED = "dc60_enabled"
-    private const val KEY_ANDROID_S_NOTICED = "android_s_noticed"
+    private const val KEY_DC_BUTTON_ENABLED = "dc_button_enabled"
+    private const val KEY_DC_REFRESH_RATE = "dc_refresh_rate"
+    private const val KEY_DC_DISABLE_AUTO_BRIGHTNESS = "dc_disable_auto_brightness"
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val toggleHandler = Handler(Looper.getMainLooper())
     private val sp = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-    
-    fun setUserRefreshRate(refreshRate: Int) {
+    val supportedRefreshRateList =
+        (context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager).getDisplay(0)
+            .supportedModes?.mapTo(mutableSetOf()) { it.refreshRate.toInt() }?.sorted()?.reversed()
+            ?: listOf(60)
+    private var autoBrightnessMode = -1
+    private var autoBrightnessModeTime = 0L
+
+    private fun setUserRefreshRate(refreshRate: Int) {
         Settings.System.putInt(context.contentResolver, "user_refresh_rate", refreshRate)
         setPeakUserRefreshRate(refreshRate)
     }
@@ -29,83 +39,94 @@ object SettingsHelper {
         Settings.System.putInt(context.contentResolver, "peak_refresh_rate", refreshRate)
     }
 
-    fun getEnableDC(): Boolean {
+    fun isDCSettingEnabled(): Boolean {
         return Settings.System.getInt(context.contentResolver, "dc_back_light", 0) == 1
     }
 
-    fun isCurrentDC90State(): Boolean {
-        return getEnableDC() && getUserRefreshRate() == 90
+    fun isDCButtonState(): Boolean {
+        return isDCButtonEnabled() && isDCSettingEnabled() && getUserRefreshRate() == getDCRefreshRate()
     }
 
-    fun isCurrentDC60State(): Boolean {
-        return getEnableDC() && getUserRefreshRate() == 60
+    private fun setAutoBrightnessMode(mode: Int) {
+        Settings.System.putInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE, mode)
+    }
+
+    private fun getAutoBrightnessMode(): Int {
+        return Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE, -1)
     }
 
     fun isDCIncompatible(): Boolean {
         return FeatureParser.getBoolean("dc_backlight_fps_incompatible", false)
     }
 
-    fun setEnableDC90(enable: Boolean, callback: (() -> Unit)? = null) {
+    fun setDCButtonEnable(enable: Boolean, callback: (() -> Unit)? = null) {
         toggleHandler.removeCallbacksAndMessages(null)
-        if (enable) {
-            val refreshRate = getUserRefreshRate()
-            if (refreshRate == 60) {
-                setUserRefreshRate(90)
+        val dcRefreshRate = getDCRefreshRate()
+        if (enable && dcRefreshRate > 0) {
+            autoBrightnessMode = getAutoBrightnessMode()
+            autoBrightnessModeTime = SystemClock.uptimeMillis()
+            val currentRefreshRate = getUserRefreshRate()
+            if (currentRefreshRate == 60) {
+                setUserRefreshRate(dcRefreshRate)
                 callback?.invoke()
             } else {
                 setUserRefreshRate(60)
                 toggleHandler.postDelayed({
-                    setUserRefreshRate(90)
+                    setUserRefreshRate(dcRefreshRate)
                     callback?.invoke()
                 }, 500)
             }
+            if (isDCDisableAutoBrightness()) {
+                setAutoBrightnessMode(Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL)
+            }
         } else {
-            setUserRefreshRate(120) // TODO restore
+            setUserRefreshRate(supportedRefreshRateList[0]) // TODO restore
             callback?.invoke()
+            if (autoBrightnessMode >= 0 && isDCDisableAutoBrightness()) {
+                setAutoBrightnessMode(autoBrightnessMode)
+                autoBrightnessMode = -1
+            }
         }
-        sp.edit().putBoolean(KEY_DC90_ENABLED, enable).apply()
+        sp.edit().putBoolean(KEY_DC_BUTTON_ENABLED, enable).apply()
     }
 
-    fun isDC90Enabled(): Boolean {
-        return sp.getBoolean(KEY_DC90_ENABLED, false)
+    fun isDCButtonEnabled(): Boolean {
+        return sp.getBoolean(KEY_DC_BUTTON_ENABLED, false)
     }
 
-    fun isDC60Enabled(): Boolean {
-        return sp.getBoolean(KEY_DC60_ENABLED, false)
+    fun getDCRefreshRate(): Int {
+        return sp.getInt(KEY_DC_REFRESH_RATE, 0)
     }
 
-    fun setEnableDC60(enable: Boolean, callback: (() -> Unit)? = null) {
-        setUserRefreshRate(if (enable) 60 else 120)
-        callback?.invoke()
-        sp.edit().putBoolean(KEY_DC60_ENABLED, enable).apply()
+    fun setDCRefreshRate(refreshRate: Int) {
+        sp.edit().putInt(KEY_DC_REFRESH_RATE, refreshRate).apply()
     }
 
-    fun checkRestoreDC90() {
+    private fun isDCDisableAutoBrightness(): Boolean {
+        return sp.getBoolean(KEY_DC_DISABLE_AUTO_BRIGHTNESS, false)
+    }
+
+    fun setDCCDisableAutoBrightness(disableAutoBrightness: Boolean) {
+        sp.edit().putBoolean(KEY_DC_DISABLE_AUTO_BRIGHTNESS, disableAutoBrightness).apply()
+    }
+
+    fun notifyAutoBrightnessChanged() {
+        if (SystemClock.uptimeMillis() - autoBrightnessModeTime > 15000) {
+            autoBrightnessMode = -1
+        }
+    }
+
+    fun checkRestoreDC() {
         MyApplication.updateQSTile()
-        if (isDC90Enabled() || isCurrentDC90State()) {
+        if (isDCButtonEnabled()) {
             mainHandler.postDelayed({
-                setEnableDC90(true) { MyApplication.updateQSTile() }
-            }, 500)
-        }
-        if (isDC60Enabled() || isCurrentDC60State()) {
-            mainHandler.postDelayed({
-                setEnableDC60(true) { MyApplication.updateQSTile() }
+                setDCButtonEnable(true) { MyApplication.updateQSTile() }
             }, 500)
         }
     }
 
-    fun shouldRestore(): Boolean {
-        return isDC90Enabled() || isCurrentDC90State() || isDC60Enabled() || isCurrentDC60State()
-    }
-
-    fun isAndroidSNoticed(): Boolean {
-        if (Build.VERSION.SDK_INT != Build.VERSION_CODES.S) {
-            return true
-        }
-        val noticed = sp.getBoolean(KEY_ANDROID_S_NOTICED, false)
-        if (!noticed) {
-            sp.edit().putBoolean(KEY_ANDROID_S_NOTICED, true).apply()
-        }
-        return noticed
+    fun reset() {
+        toggleHandler.removeCallbacksAndMessages(null)
+        mainHandler.removeCallbacksAndMessages(null)
     }
 }

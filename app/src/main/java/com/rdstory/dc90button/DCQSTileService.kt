@@ -1,14 +1,15 @@
 package com.rdstory.dc90button
 
-import android.annotation.SuppressLint
+import android.annotation.TargetApi
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.util.Log
 
-@SuppressLint("NewApi")
-open class DCQSTileService : TileService() {
+@TargetApi(Build.VERSION_CODES.Q)
+class DCQSTileService : TileService() {
     companion object {
         private val TAG = DCQSTileService::class.java.simpleName
     }
@@ -20,9 +21,14 @@ open class DCQSTileService : TileService() {
 
     private fun updateTileStatus() {
         val tile = qsTile ?: return
-        tile.state = getTileState()
+        tile.state = if (SettingsHelper.isDCButtonState()) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+        val dcRefreshRate = SettingsHelper.getDCRefreshRate()
+        tile.label = if (dcRefreshRate > 0) "DC$dcRefreshRate" else getString(R.string.dc_button_label)
         tile.updateTile()
-        Log.i(TAG, "tile state: ${tile.state}")
+        Log.i(TAG, "tile state: ${tile.state}, " +
+                "dcSetting: ${SettingsHelper.isDCSettingEnabled()}, " +
+                "userRR: ${SettingsHelper.getUserRefreshRate()}, " +
+                "dcRR: ${SettingsHelper.getDCRefreshRate()}")
     }
 
     override fun onStartListening() {
@@ -41,28 +47,38 @@ open class DCQSTileService : TileService() {
     override fun onClick() {
         super.onClick()
         mainHandler.removeCallbacks(updateRunnable)
-        if (!SettingsHelper.getEnableDC()) {
+        if (!SettingsHelper.isDCSettingEnabled()) {
             showDialog(OpenDCDialog(this))
             qsTile.state = Tile.STATE_INACTIVE
             qsTile.updateTile()
             return
         }
-        toggleButton()
-        qsTile.state = if (qsTile.state != Tile.STATE_ACTIVE) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        qsTile.updateTile()
-        if (!SettingsHelper.isAndroidSNoticed()) {
-            showDialog(AndroidSNoticeDialog(this))
+        val dcRefreshRate = SettingsHelper.getDCRefreshRate()
+        if (dcRefreshRate <= 0) {
+            showDialog(ButtonSettingDialog(this))
+            qsTile.state = Tile.STATE_INACTIVE
+            qsTile.updateTile()
+            return
         }
-    }
-
-    open fun toggleButton() {
-        SettingsHelper.setEnableDC90(qsTile.state != Tile.STATE_ACTIVE) {
+        val toEnable = qsTile.state != Tile.STATE_ACTIVE
+        SettingsHelper.setDCButtonEnable(toEnable) {
             // check status again later
             MyApplication.updateQSTile()
         }
+        qsTile.state = if (toEnable) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+        qsTile.updateTile()
     }
 
-    open fun getTileState(): Int {
-        return if (SettingsHelper.isCurrentDC90State()) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+    override fun onTileAdded() {
+        super.onTileAdded()
+        MyApplication.updateQSTile()
+    }
+
+    override fun onTileRemoved() {
+        super.onTileRemoved()
+        SettingsHelper.reset()
+        SettingsHelper.setDCButtonEnable(false)
+        SettingsHelper.setDCRefreshRate(0)
+        SettingsHelper.setDCCDisableAutoBrightness(false)
     }
 }

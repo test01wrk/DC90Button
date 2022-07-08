@@ -19,10 +19,13 @@ class DCQSTileService : TileService() {
         updateTileStatus()
     }
 
-    private fun updateTileStatus() {
+    private fun updateTileStatus(state: Int? = null) {
         val tile = qsTile ?: return
-        tile.state = if (SettingsHelper.isDCButtonState()) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        val dcRefreshRate = SettingsHelper.getDCRefreshRate()
+        tile.state = state
+            ?: if (SettingsHelper.isDCButtonActive()) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+        val dcRefreshRate = SettingsHelper.getDCRefreshRate().takeIf { it > 0 }
+            ?: SettingsHelper.getDCRefreshRateList().takeIf { it.size == 1 }?.get(0)
+            ?: 0
         tile.label = if (dcRefreshRate > 0) "DC$dcRefreshRate" else getString(R.string.dc_button_label)
         tile.updateTile()
         Log.i(TAG, "tile state: ${tile.state}, " +
@@ -49,24 +52,22 @@ class DCQSTileService : TileService() {
         mainHandler.removeCallbacks(updateRunnable)
         if (!SettingsHelper.isDCSettingEnabled()) {
             showDialog(OpenDCDialog(this))
-            qsTile.state = Tile.STATE_INACTIVE
-            qsTile.updateTile()
+            updateTileStatus(Tile.STATE_INACTIVE)
             return
         }
-        val dcRefreshRate = SettingsHelper.getDCRefreshRate()
-        if (dcRefreshRate <= 0) {
+        val dcRefreshRateList = SettingsHelper.getDCRefreshRateList()
+        if (dcRefreshRateList.isEmpty()) {
             showDialog(ButtonSettingDialog(this))
-            qsTile.state = Tile.STATE_INACTIVE
-            qsTile.updateTile()
+            updateTileStatus(Tile.STATE_INACTIVE)
             return
         }
-        val toEnable = qsTile.state != Tile.STATE_ACTIVE
-        SettingsHelper.setDCButtonEnable(toEnable) {
+        val dcRefreshRateIndex = dcRefreshRateList.indexOf(SettingsHelper.getDCRefreshRate())
+        val dcRefreshRate = dcRefreshRateList.getOrNull(dcRefreshRateIndex + 1) ?: 0
+        SettingsHelper.setDCButtonRefreshRate(dcRefreshRate) {
             // check status again later
             MyApplication.updateQSTile()
         }
-        qsTile.state = if (toEnable) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        qsTile.updateTile()
+        updateTileStatus(if (dcRefreshRate > 0) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE)
     }
 
     override fun onTileAdded() {
@@ -77,8 +78,8 @@ class DCQSTileService : TileService() {
     override fun onTileRemoved() {
         super.onTileRemoved()
         SettingsHelper.reset()
-        SettingsHelper.setDCButtonEnable(false)
-        SettingsHelper.setDCRefreshRate(0)
+        SettingsHelper.setDCButtonRefreshRate(0)
+        SettingsHelper.setDCRefreshRateList(emptyList())
         SettingsHelper.setDCCDisableAutoBrightness(false)
     }
 }

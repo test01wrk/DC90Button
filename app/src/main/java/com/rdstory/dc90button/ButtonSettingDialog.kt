@@ -7,29 +7,33 @@ import android.content.Context
 import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.Spinner
-import android.widget.Switch
+import android.view.ViewGroup
+import android.widget.*
 
 @TargetApi(Build.VERSION_CODES.Q)
 class ButtonSettingDialog(context: Context) : AlertDialog(context, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert) {
     init {
+        val inflater = LayoutInflater.from(getContext())
         @SuppressLint("InflateParams")
-        val contentView = LayoutInflater.from(getContext()).inflate(R.layout.button_setting_dialog, null)
-        val spinnerView = contentView.findViewById<Spinner>(R.id.refresh_rate_spinner)
-        val refreshRateList = SettingsHelper.supportedRefreshRateList.filter { it >= 60 }.reversed()
-        spinnerView.adapter = ArrayAdapter(getContext(), android.R.layout.simple_spinner_item, refreshRateList).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-        var setRefreshRate = refreshRateList[0]
-        spinnerView.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                refreshRateList.getOrNull(position)?.let { setRefreshRate = it }
+        val contentView = inflater.inflate(R.layout.button_setting_dialog, null)
+        val checkContainer = contentView.findViewById<GridView>(R.id.refresh_rate_check_container)
+        val refreshRateList = SettingsHelper.supportedRefreshRateList.filter { it >= 60 }
+        val selectRefreshRate = mutableSetOf<Int>()
+        checkContainer.adapter = object : ArrayAdapter<Int>(getContext(), R.layout.button_setting_dialog_check_item, refreshRateList) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                return super.getView(position, convertView, parent).also { view ->
+                    (view as CheckBox).setOnCheckedChangeListener { _, isChecked ->
+                        refreshRateList.getOrNull(position)?.let { r ->
+                            if (isChecked) {
+                                selectRefreshRate.add(r)
+                            } else {
+                                selectRefreshRate.remove(r)
+                            }
+                        }
+                    }
+                }
             }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
-        spinnerView.setSelection(0)
         val switch = contentView.findViewById<Switch>(R.id.disable_auto_brightness_switch)
         switch.setOnCheckedChangeListener { _, isChecked ->
             SettingsHelper.setDCCDisableAutoBrightness(isChecked)
@@ -43,7 +47,10 @@ class ButtonSettingDialog(context: Context) : AlertDialog(context, android.R.sty
         }
         setView(contentView)
         setButton(BUTTON_POSITIVE, context.getString(R.string.confirm)) { dialog, _ ->
-            SettingsHelper.setDCRefreshRate(setRefreshRate)
+            if (selectRefreshRate.isEmpty()) {
+                return@setButton
+            }
+            SettingsHelper.setDCRefreshRateList(selectRefreshRate)
             MyApplication.updateQSTile()
             dialog.dismiss()
         }

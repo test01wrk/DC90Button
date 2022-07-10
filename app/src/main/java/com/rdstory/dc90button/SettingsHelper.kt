@@ -36,6 +36,7 @@ object SettingsHelper {
     }
 
     fun setPeakUserRefreshRate(refreshRate: Int) {
+        setUserMinRefreshRate(refreshRate)
         Settings.System.putInt(context.contentResolver, "peak_refresh_rate", refreshRate)
     }
 
@@ -68,7 +69,6 @@ object SettingsHelper {
         val wasEnable = getDCRefreshRate() > 0
         setDCRefreshRate(dcRefreshRate)
         if (dcRefreshRate > 0) {
-            setUserMinRefreshRate(60)
             val currentRefreshRate = getUserRefreshRate()
             if (currentRefreshRate == 60) {
                 setUserRefreshRate(dcRefreshRate)

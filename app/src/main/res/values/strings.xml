@@ -1,12 +1,18 @@
 <resources>
     <string name="app_name">DC90Button</string>
-    <string name="default_dc_tile_label">DC90</string>
-    <string name="default_dc60_tile_label">DC60</string>
+    <string name="dc_button_label">DCButton</string>
     <string name="dc_not_enable">DC 功能未开启</string>
-    <string name="open_dc_desc">请前往设置页面开启 DC 功能后再试</string>
+    <string name="open_dc_desc">请前往系统设置页面开启 DC 功能后再试</string>
     <string name="goto_settings">前往设置</string>
     <string name="cancel">取消</string>
-    <string name="android_s_notice_title">Android 12 系统说明</string>
-    <string name="android_s_notice_content">Android 12 系统锁屏后 DC 失效，本开关可能无法在解锁后自动恢复 DC 效果，可能需要多次解锁或前往系统设置手动重新开启 DC 开关后才能恢复 DC 效果</string>
+    <string name="button_settings_dialog_title">DCButton 设置</string>
+    <string name="button_settings_dialog_desc">1. 安卓11系统开高刷时锁屏后丢失 DC，解锁后恢复 DC\n2. 需要允许自启动、省电策略无限制。可启用无障碍服务保活效果会更好\n3. 如需修改按钮设置，删除按钮重新添加</string>
+    <string name="button_settings_dialog_desc_s">1. 安卓12系统开高刷时锁屏后丢失 DC，锁屏和解锁可能需要间隔3秒以上才能解锁后恢复 DC\n2. 需要允许自启动、省电策略无限制。可启用无障碍服务保活效果会更好\n3. 如需修改按钮设置，删除按钮重新添加</string>
     <string name="got_it">我知道了</string>
+    <string name="confirm">确定</string>
+    <string name="button_settings_select_refresh_rate">选择按钮刷新率，多选时依次切换</string>
+    <string name="button_settings_disable_auto_brightness">开启开关后是否关闭自动亮度，避免 DC + 高刷自动亮度乱跳</string>
+    <string name="button_settings_dialog_not_select_refresh_rate">未选择 DC 刷新率</string>
+    <string name="accessibility_service_label">DCButton 恢复 DC 服务</string>
+    <string name="accessibility_service_description">开启此服务有助于保持进程存活，进程存活才能在解锁后帮助恢复 DC</string>
 </resources>

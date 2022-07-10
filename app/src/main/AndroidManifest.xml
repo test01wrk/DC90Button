@@ -32,7 +32,7 @@
             android:enabled="true"
             android:exported="true"
             android:icon="@drawable/ic_dc_tile"
-            android:label="@string/default_dc_tile_label"
+            android:label="@string/dc_button_label"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
@@ -46,23 +46,15 @@
                 android:value="true" />
         </service>
 
-        <service
-            android:name="com.rdstory.dc90button.DC60QSTileService"
-            android:enabled="true"
-            android:exported="true"
-            android:icon="@drawable/ic_dc_tile"
-            android:label="@string/default_dc60_tile_label"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+        <service android:name=".RestoreDCAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:label="@string/accessibility_service_label">
             <intent-filter>
-                <action android:name="android.service.quicksettings.action.QS_TILE" />
+                <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
-
             <meta-data
-                android:name="android.service.quicksettings.ACTIVE_TILE"
-                android:value="true" />
-            <meta-data
-                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
-                android:value="true" />
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
         </service>
 
     </application>

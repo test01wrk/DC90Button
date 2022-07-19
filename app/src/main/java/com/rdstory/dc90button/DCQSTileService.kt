@@ -1,6 +1,8 @@
 package com.rdstory.dc90button
 
 import android.annotation.TargetApi
+import android.content.ContentValues
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -12,6 +14,8 @@ import android.util.Log
 class DCQSTileService : TileService() {
     companion object {
         private val TAG = DCQSTileService::class.java.simpleName
+        private val URI_SET_REFRESH_RATE = Uri.parse("content://com.rdstory.miuiperfsaver.config_provider/refresh_rate")
+        private val URI_SET_REFRESH_RATE_DEBUG = Uri.parse("content://com.rdstory.miuiperfsaver.config_provider.debug/refresh_rate")
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -21,6 +25,8 @@ class DCQSTileService : TileService() {
 
     private fun updateTileStatus(state: Int? = null) {
         val tile = qsTile ?: return
+        val oldState = tile.state
+        val oldLabel = tile.label
         tile.state = state
             ?: if (SettingsHelper.isDCButtonActive()) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         val dcRefreshRate = SettingsHelper.getDCRefreshRate().takeIf { it > 0 }
@@ -28,10 +34,26 @@ class DCQSTileService : TileService() {
             ?: 0
         tile.label = if (dcRefreshRate > 0) "DC$dcRefreshRate" else getString(R.string.dc_button_label)
         tile.updateTile()
+        if (oldState != tile.state || oldLabel != tile.label) {
+            notifyFixedRefreshRate(if (tile.state == Tile.STATE_ACTIVE) dcRefreshRate else 0)
+        }
         Log.i(TAG, "tile state: ${tile.state}, " +
                 "dcSetting: ${SettingsHelper.isDCSettingEnabled()}, " +
                 "userRR: ${SettingsHelper.getUserRefreshRate()}, " +
                 "dcRR: ${SettingsHelper.getDCRefreshRate()}")
+    }
+
+    /**
+     * if com.rdstory.miuiperfsaver installed, it should use our refresh rate
+     */
+    private fun notifyFixedRefreshRate(refreshRate: Int) {
+        for (uri in listOf(URI_SET_REFRESH_RATE_DEBUG, URI_SET_REFRESH_RATE)) {
+            try {
+                val value = ContentValues(1).apply { put("refresh_rate", refreshRate) }
+                contentResolver.update(uri, value, null, null)
+            } catch (ignore: Exception) {
+            }
+        }
     }
 
     override fun onStartListening() {
